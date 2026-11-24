@@ -1,38 +1,36 @@
 ---
 name: youtube-transcript
-description: Get the transcript of a YouTube video from its link, using existing captions (fast, no download) with a local Whisper fallback. Use when asked to transcribe, summarize, quote or take notes on a YouTube video.
+description: Get an accurate transcript (Korean by default) of a YouTube video from its link by transcribing the audio locally with Whisper large-v3. Use when asked to transcribe, summarize, quote or take notes on a YouTube video.
 ---
 
 # YouTube transcript
 
-The tool is `scripts/yt-transcript.py` in this repo (copy it next to this skill if you
-install the skill elsewhere). It reads the captions YouTube already serves, so it is
-near-instant and downloads no video or audio.
+The tool is `scripts/yt-transcript.py` in this repo. YouTube's Korean auto-captions are
+too inaccurate, so it downloads only the audio (yt-dlp) and transcribes it locally with
+Whisper large-v3: mlx-whisper on Apple Silicon (needs ffmpeg), faster-whisper on NVIDIA GPU
+or CPU. Human-made captions, when a video has them, are used instead because they're exact.
 
 ## Steps
 
-1. Run it on the link. `uv run` installs the one dependency on the fly:
+1. Run it on the link. `uv run` installs the dependencies on the first run:
    ```bash
    uv run scripts/yt-transcript.py "<url>" -f md -o /tmp/transcript.md
    ```
-   No `uv`? `pip install youtube-transcript-api` then `python3 scripts/yt-transcript.py ...`.
-2. Pick the format for the job:
-   - `-f text` (default): clean paragraphs, best for summarizing or feeding to a model.
-   - `-f md`: title, plus a clickable timestamp on every paragraph, best for notes and quotes.
-   - `-f srt` / `-f json`: per-caption timing.
-3. Languages: `-l ko en` sets the preference order (default `en ko`). Manual captions
-   win over auto-generated ones. `--list` shows which tracks exist.
-4. If it says the video has no captions, re-run with Whisper (slower, runs locally,
-   needs ffmpeg):
-   ```bash
-   uv run --with yt-dlp --with faster-whisper scripts/yt-transcript.py "<url>" --whisper
-   ```
-5. Read the output file rather than pasting a long transcript into chat. When summarizing,
+   Progress goes to stderr. The first run also downloads the model (~3 GB).
+2. Options:
+   - `-f text` (default) clean paragraphs; `-f md` title + clickable timestamps; `-f srt` / `-f json`.
+   - `--fast`: large-v3-turbo, about 3-5x faster, slightly less accurate. Use it on CPU-only machines
+     or long videos when speed matters more than precision.
+   - `--prompt "names, jargon"`: proper nouns and technical terms that appear in the video, so Whisper
+     spells them right. Fill it from the video title/description when they have such terms.
+   - `-l en` (or another code) for a non-Korean video. Default is `ko`.
+   - `--source captions`: YouTube captions only, instant but rough. Only when the user asks for speed.
+3. Read the output file rather than pasting a long transcript into chat. When summarizing,
    cite timestamps from the `md` format.
 
 ## Errors
 
-- `IpBlocked` / `RequestBlocked`: YouTube blocks many cloud and datacenter IPs. Run it on
-  a home or office connection (the user's own computer) instead, or set
-  `WEBSHARE_PROXY_USERNAME`/`WEBSHARE_PROXY_PASSWORD` or `YT_PROXY_URL` to route through a proxy.
-- `AgeRestricted` / `VideoUnavailable`: the video can't be read without signing in.
+- Sign-in / bot check or HTTP 403 from yt-dlp: YouTube blocks most cloud and datacenter IPs.
+  Run it on the user's own computer. Updating yt-dlp (`uv run --upgrade ...`) fixes most other
+  download errors.
+- Age-restricted or private videos can't be fetched without the user's cookies.

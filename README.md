@@ -42,16 +42,20 @@ Star counts are a snapshot at crawl time. "Age" is days since the repo was creat
 
 ## YouTube transcripts
 
+Accurate Korean transcripts. YouTube's Korean auto-captions are too rough, so the script downloads
+only the audio and transcribes it locally with **Whisper large-v3**, using the fastest backend for
+your machine (Apple GPU via mlx-whisper, NVIDIA via faster-whisper, otherwise CPU).
+If a video has human-made Korean captions, it uses those instead because they are exact and instant.
+
 ```bash
-uv run scripts/yt-transcript.py "https://youtu.be/VIDEO_ID"              # plain text
-uv run scripts/yt-transcript.py "<url>" -f md -o notes.md                # markdown + timestamps
-uv run scripts/yt-transcript.py "<url>" -l ko en                         # language preference
-uv run --with yt-dlp --with faster-whisper scripts/yt-transcript.py "<url>" --whisper   # no captions
+brew install uv ffmpeg                                         # once (ffmpeg enables the Apple GPU path)
+uv run scripts/yt-transcript.py "https://youtu.be/VIDEO_ID"                 # plain text
+uv run scripts/yt-transcript.py "<url>" -f md -o notes.md                   # markdown + timestamps
+uv run scripts/yt-transcript.py "<url>" --fast                              # large-v3-turbo, ~3-5x faster
+uv run scripts/yt-transcript.py "<url>" --prompt "Claude, 에이전트, MCP"     # spell names/jargon right
+uv run scripts/yt-transcript.py "<url>" --source captions                   # YouTube captions only
+uv run scripts/yt-transcript.py "<url>" -l en                               # non-Korean video
 ```
 
-It uses the captions YouTube already has (manual, then auto-generated), so it takes about a
-second and downloads nothing. Whisper is only used with `--whisper`, for videos without captions.
-No `uv`? `pip install youtube-transcript-api` and use `python3`. Run it from your own computer:
-YouTube blocks most cloud IPs, including the one Claude's cloud sessions use. To run it from a
-server anyway, set `WEBSHARE_PROXY_USERNAME`/`WEBSHARE_PROXY_PASSWORD` (Webshare residential proxies)
-or `YT_PROXY_URL=http://user:pass@host:port`.
+The first run downloads the model (~3 GB for large-v3, ~1.6 GB for turbo). Run it on your own
+computer: YouTube blocks most cloud IPs, including the one Claude's cloud sessions use.
