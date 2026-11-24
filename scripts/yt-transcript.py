@@ -18,6 +18,8 @@ Usage:
   scripts/yt-transcript.py URL --whisper             # allow audio+Whisper fallback
 
 Formats: text (default), md, srt, json.
+Running from a cloud server? YouTube blocks most datacenter IPs; set
+WEBSHARE_PROXY_USERNAME/WEBSHARE_PROXY_PASSWORD or YT_PROXY_URL (see api()).
 Run with `uv run scripts/yt-transcript.py ...` (no install needed), or
 `pip install youtube-transcript-api` and use python3.
 """
@@ -98,10 +100,29 @@ def paragraphs(snips: list[dict], every: float) -> list[tuple[float, str]]:
     return out
 
 
-def fetch_captions(vid: str, langs: list[str]):
-    from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound
+def api():
+    """YouTubeTranscriptApi, routed through a proxy if one is configured.
+    YouTube blocks most cloud/datacenter IPs; on a home connection no proxy is needed.
+      WEBSHARE_PROXY_USERNAME + WEBSHARE_PROXY_PASSWORD  -> Webshare rotating residential proxies
+      YT_PROXY_URL=http://user:pass@host:port            -> any other HTTP(S) proxy"""
+    import os
+    from youtube_transcript_api import YouTubeTranscriptApi
+    from youtube_transcript_api.proxies import GenericProxyConfig, WebshareProxyConfig
 
-    tl = YouTubeTranscriptApi().list(vid)
+    if os.environ.get("WEBSHARE_PROXY_USERNAME"):
+        cfg = WebshareProxyConfig(proxy_username=os.environ["WEBSHARE_PROXY_USERNAME"],
+                                  proxy_password=os.environ.get("WEBSHARE_PROXY_PASSWORD", ""))
+    elif os.environ.get("YT_PROXY_URL"):
+        cfg = GenericProxyConfig(http_url=os.environ["YT_PROXY_URL"], https_url=os.environ["YT_PROXY_URL"])
+    else:
+        cfg = None
+    return YouTubeTranscriptApi(proxy_config=cfg)
+
+
+def fetch_captions(vid: str, langs: list[str]):
+    from youtube_transcript_api import NoTranscriptFound
+
+    tl = api().list(vid)
     try:
         tr = tl.find_transcript(langs)  # manual before auto-generated
     except NoTranscriptFound:
@@ -165,8 +186,7 @@ def main() -> None:
     from youtube_transcript_api import TranscriptsDisabled, NoTranscriptFound, YouTubeTranscriptApiException
 
     if a.list:
-        from youtube_transcript_api import YouTubeTranscriptApi
-        for t in YouTubeTranscriptApi().list(vid):
+        for t in api().list(vid):
             print(f"{t.language_code:8} {'auto' if t.is_generated else 'manual':6} {t.language}")
         return
     try:

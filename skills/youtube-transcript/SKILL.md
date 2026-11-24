@@ -33,5 +33,6 @@ near-instant and downloads no video or audio.
 ## Errors
 
 - `IpBlocked` / `RequestBlocked`: YouTube blocks many cloud and datacenter IPs. Run it on
-  a home or office connection (the user's own computer) instead.
+  a home or office connection (the user's own computer) instead, or set
+  `WEBSHARE_PROXY_USERNAME`/`WEBSHARE_PROXY_PASSWORD` or `YT_PROXY_URL` to route through a proxy.
 - `AgeRestricted` / `VideoUnavailable`: the video can't be read without signing in.

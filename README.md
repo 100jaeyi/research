@@ -52,4 +52,6 @@ uv run --with yt-dlp --with faster-whisper scripts/yt-transcript.py "<url>" --wh
 It uses the captions YouTube already has (manual, then auto-generated), so it takes about a
 second and downloads nothing. Whisper is only used with `--whisper`, for videos without captions.
 No `uv`? `pip install youtube-transcript-api` and use `python3`. Run it from your own computer:
-YouTube blocks most cloud IPs, including the one Claude's cloud sessions use.
+YouTube blocks most cloud IPs, including the one Claude's cloud sessions use. To run it from a
+server anyway, set `WEBSHARE_PROXY_USERNAME`/`WEBSHARE_PROXY_PASSWORD` (Webshare residential proxies)
+or `YT_PROXY_URL=http://user:pass@host:port`.
