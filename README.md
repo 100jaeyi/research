@@ -10,6 +10,8 @@ with a focus on **agent skills, MCP servers and agent frameworks**.
 | `digests/YYYY-MM-DD.md` | One digest per day, newest wins. Start here. |
 | `CRITERIA.md` | What counts as interesting, and what gets filtered out. |
 | `scripts/crawl.sh` | The GitHub searches each run starts from (raw candidates as TSV). |
+| `scripts/yt-transcript.py` | Transcript of a YouTube video from its link. See below. |
+| `skills/youtube-transcript/` | Agent skill wrapping that script, for Claude sessions. |
 
 ## How a digest is made
 
@@ -37,3 +39,17 @@ A scheduled run does this every day at 8 AM Asia/Seoul.
 ```
 
 Star counts are a snapshot at crawl time. "Age" is days since the repo was created.
+
+## YouTube transcripts
+
+```bash
+uv run scripts/yt-transcript.py "https://youtu.be/VIDEO_ID"              # plain text
+uv run scripts/yt-transcript.py "<url>" -f md -o notes.md                # markdown + timestamps
+uv run scripts/yt-transcript.py "<url>" -l ko en                         # language preference
+uv run --with yt-dlp --with faster-whisper scripts/yt-transcript.py "<url>" --whisper   # no captions
+```
+
+It uses the captions YouTube already has (manual, then auto-generated), so it takes about a
+second and downloads nothing. Whisper is only used with `--whisper`, for videos without captions.
+No `uv`? `pip install youtube-transcript-api` and use `python3`. Run it from your own computer:
+YouTube blocks most cloud IPs, including the one Claude's cloud sessions use.
